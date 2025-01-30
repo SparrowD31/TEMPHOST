@@ -8,51 +8,46 @@ const User = require('../models/User');
 // Login route
 router.post('/login', async (req, res) => {
   try {
-    console.log('Login request received:', req.body);
+    // Check if request body is empty
+    if (!req.body || !req.body.email || !req.body.password) {
+      console.log('Missing credentials in request body');
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
     const { email, password } = req.body;
+    console.log('Processing login for email:', email);
     
     // Find user
     const user = await User.findOne({ email });
     console.log('User search result:', user ? 'User found' : 'User not found');
     
-    // Check if user exists first
     if (!user) {
-      console.log('Sending user not found response');
+      console.log('User not found for email:', email);
       return res.status(400).json({ message: 'User not found' });
     }
 
-    // Now it's safe to log user details
-    console.log('Login - Found User:', {
-      id: user._id,
-      email: user.email,
-      role: user.role,
-      fullUser: user.toObject()
-    });
-
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log('Password match:', isMatch);
+    console.log('Password match result:', isMatch);
     
     if (!isMatch) {
-      console.log('Sending invalid credentials response');
+      console.log('Invalid password for user:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Create token with role included
+    // Create token
     const payload = {
       id: user._id,
       email: user.email,
       role: user.role,
     };
 
-    console.log('Creating JWT token with payload:', payload);
     const token = jwt.sign(
       payload,
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    // Send response with full user object
     const userResponse = {
       id: user._id,
       email: user.email,
@@ -61,20 +56,27 @@ router.post('/login', async (req, res) => {
       mobile: user.mobile,
     };
 
-    console.log('About to send success response:', { token: 'JWT_TOKEN', user: userResponse });
+    console.log('Sending successful login response for user:', email);
     
-    return res.json({
+    // Make sure we're explicitly setting the content type
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(200).json({
+      success: true,
       token,
       user: userResponse
     });
 
   } catch (error) {
-    console.error('Login error details:', {
+    console.error('Login error:', {
       message: error.message,
       stack: error.stack,
       name: error.name
     });
+    
+    // Make sure error response is also properly formatted
+    res.setHeader('Content-Type', 'application/json');
     return res.status(500).json({ 
+      success: false,
       message: 'Server error',
       error: error.message 
     });
