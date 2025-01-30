@@ -7,29 +7,16 @@ const connectDB = require('./config/database');
 
 const app = express();
 
-// CORS configuration
-const allowedOrigins = [
-  'https://temphost-frontend.onrender.com',
-  'http://localhost:5173'
-];
-
+// CORS configuration - This must be before any routes
 app.use(cors({
-  origin: function(origin, callback) {
-    console.log('Request origin:', origin);
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('CORS not allowed'));
-    }
-    return callback(null, true);
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: ['https://temphost-frontend.onrender.com', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false // Set to false for cross-domain requests
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 
-// Add OPTIONS handling for preflight requests
+// Enable pre-flight requests for all routes
 app.options('*', cors());
 
 // Connect to Database
@@ -42,10 +29,16 @@ app.use(cookieParser());
 
 // Request logging middleware
 app.use((req, res, next) => {
+  // Add CORS headers to every response
+  res.header('Access-Control-Allow-Origin', 'https://temphost-frontend.onrender.com');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
   console.log('Incoming request:', {
     method: req.method,
     path: req.path,
-    body: req.body,
+    origin: req.headers.origin,
     headers: req.headers
   });
   next();
