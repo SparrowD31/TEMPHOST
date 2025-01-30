@@ -40,64 +40,69 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
+    console.log('Login request received:', req.body);
+    
     const { email, password } = req.body;
     
-    console.log('Login attempt for:', email);
-    
-    // Find user and explicitly select password and role
-    const user = await User.findOne({ email }).select('+password +role');
-    
-    console.log('User found:', user ? 'Yes' : 'No');
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    const user = await User.findOne({ email }).select('+password');
     
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
 
-    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log('Password match:', isMatch);
     
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
 
-    // Create token
-    const payload = {
-      id: user._id,
-      email: user.email,
-      role: user.role
-    };
-
     const token = jwt.sign(
-      payload,
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    const userResponse = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      mobile: user.mobile
-    };
+    // Log the response being sent
+    console.log('Sending response:', {
+      success: true,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role
+      }
+    });
 
-    console.log('Sending response:', { token: 'exists', user: userResponse });
-
-    // Set explicit headers
-    res.setHeader('Content-Type', 'application/json');
     return res.status(200).json({
       success: true,
       token,
-      user: userResponse
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        mobile: user.mobile
+      }
     });
-
+    
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message 
+      error: error.message
     });
   }
 };

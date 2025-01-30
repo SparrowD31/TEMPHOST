@@ -7,15 +7,30 @@ const connectDB = require('./config/database');
 
 const app = express();
 
-// CORS configuration - This must come BEFORE routes
+// CORS configuration
+const allowedOrigins = [
+  'https://temphost-frontend.onrender.com',
+  'http://localhost:5173'
+];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? 'https://temphost-frontend.onrender.com'
-    : 'http://localhost:5173',
-  credentials: true,
+  origin: function(origin, callback) {
+    console.log('Request origin:', origin);
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error('CORS not allowed'));
+    }
+    return callback(null, true);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false // Set to false for cross-domain requests
 }));
+
+// Add OPTIONS handling for preflight requests
+app.options('*', cors());
 
 // Connect to Database
 connectDB();
@@ -59,13 +74,22 @@ app.get('/api/test-server', (req, res) => {
   res.json({ message: 'Server is working' });
 });
 
-// Error handling middleware
+// Add this before your routes
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`, {
+    body: req.body,
+    query: req.query,
+    headers: req.headers
+  });
+  next();
+});
+
+// Add this after your routes
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
-  res.status(500).json({ 
+  res.status(500).json({
     success: false,
-    message: 'Server error', 
-    error: err.message 
+    message: err.message || 'Internal server error'
   });
 });
 
