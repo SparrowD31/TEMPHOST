@@ -15,7 +15,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000', // Replace with your backend URL
+        target: 'https://temphost-backend.onrender.com', // Replace with your backend URL
         changeOrigin: true,
         secure: false,
       },
