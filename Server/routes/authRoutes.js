@@ -8,13 +8,16 @@ const User = require('../models/User');
 // Login route
 router.post('/login', async (req, res) => {
   try {
+    console.log('Login request received:', req.body);
     const { email, password } = req.body;
     
     // Find user
     const user = await User.findOne({ email });
+    console.log('User search result:', user ? 'User found' : 'User not found');
     
     // Check if user exists first
     if (!user) {
+      console.log('Sending user not found response');
       return res.status(400).json({ message: 'User not found' });
     }
 
@@ -28,7 +31,10 @@ router.post('/login', async (req, res) => {
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password match:', isMatch);
+    
     if (!isMatch) {
+      console.log('Sending invalid credentials response');
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -39,6 +45,7 @@ router.post('/login', async (req, res) => {
       role: user.role,
     };
 
+    console.log('Creating JWT token with payload:', payload);
     const token = jwt.sign(
       payload,
       process.env.JWT_SECRET,
@@ -54,16 +61,23 @@ router.post('/login', async (req, res) => {
       mobile: user.mobile,
     };
 
-    console.log('Login - Sending Response:', userResponse);
-
+    console.log('About to send success response:', { token: 'JWT_TOKEN', user: userResponse });
+    
     return res.json({
       token,
       user: userResponse
     });
 
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Login error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    return res.status(500).json({ 
+      message: 'Server error',
+      error: error.message 
+    });
   }
 });
 

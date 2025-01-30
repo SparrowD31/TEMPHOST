@@ -23,19 +23,23 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const data = await login(email, password);
-      console.log('Login successful:', data);
+      const response = await login(email, password);
+      console.log('Login response:', response);
       
-      // First ensure login is successful
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      if (!response || !response.token) {
+        throw new Error('Invalid response from server');
+      }
       
-      // Only navigate after the delay
       setIsLoading(false);
       navigate('/user/profile', { replace: true });
       
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Invalid email or password');
+      console.error('Login error details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
+      setError(err.message || 'Invalid email or password');
       setIsLoading(false);
     }
   };
