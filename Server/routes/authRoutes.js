@@ -12,16 +12,19 @@ router.post('/login', async (req, res) => {
     
     // Find user
     const user = await User.findOne({ email });
+    
+    // Check if user exists first
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    // Now it's safe to log user details
     console.log('Login - Found User:', {
       id: user._id,
       email: user.email,
       role: user.role,
       fullUser: user.toObject()
     });
-
-    if (!user) {
-      return res.status(400).json({ message: 'User not found' });
-    }
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
@@ -33,7 +36,7 @@ router.post('/login', async (req, res) => {
     const payload = {
       id: user._id,
       email: user.email,
-      role: user.role,  // Make sure role is included in token
+      role: user.role,
     };
 
     const token = jwt.sign(
@@ -48,19 +51,19 @@ router.post('/login', async (req, res) => {
       email: user.email,
       role: user.role,
       name: user.name,
-      mobile:user.mobile,
+      mobile: user.mobile,
     };
 
     console.log('Login - Sending Response:', userResponse);
 
-    res.json({
+    return res.json({
       token,
       user: userResponse
     });
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
