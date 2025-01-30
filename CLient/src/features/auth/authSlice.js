@@ -3,8 +3,8 @@ import { createSlice } from '@reduxjs/toolkit';
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    isAuthenticated: false,
-    user: null,
+    isAuthenticated: !!sessionStorage.getItem('authToken'),
+    user: JSON.parse(localStorage.getItem('userData')) || null,
     token: sessionStorage.getItem('authToken'),
   },
   reducers: {
@@ -17,7 +17,8 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.user = null;
       state.token = null;
-      sessipnStorage.removeItem('authToken');
+      sessionStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
     },
   },
 });

@@ -42,10 +42,12 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Find user and explicitly select the role field
-    const user = await User.findOne({ email }).select('+role');
+    console.log('Login attempt for:', email);
     
-    console.log('Found user:', user); // Debug log
+    // Find user and explicitly select password and role
+    const user = await User.findOne({ email }).select('+password +role');
+    
+    console.log('User found:', user ? 'Yes' : 'No');
     
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -53,41 +55,50 @@ exports.login = async (req, res) => {
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password match:', isMatch);
+    
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Create token
+    const payload = {
+      id: user._id,
+      email: user.email,
+      role: user.role
+    };
+
     const token = jwt.sign(
-      { 
-        userId: user._id,
-        role: user.role // Include role in token
-      },
+      payload,
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    // Send response with complete user data
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role, // Explicitly include role
-      }
-    });
-
-    console.log('Login response:', { // Debug log
-      userId: user._id,
-      role: user.role,
+    const userResponse = {
+      id: user._id,
       name: user.name,
-      email: user.email
+      email: user.email,
+      role: user.role,
+      mobile: user.mobile
+    };
+
+    console.log('Sending response:', { token: 'exists', user: userResponse });
+
+    // Set explicit headers
+    res.setHeader('Content-Type', 'application/json');
+    return res.status(200).json({
+      success: true,
+      token,
+      user: userResponse
     });
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message 
+    });
   }
 };
 
