@@ -12,12 +12,11 @@ export const loginUser = async (credentials) => {
       body: JSON.stringify(credentials),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Login failed');
-    }
-
     const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Login failed');
+    }
     
     // Store user data and token
     sessionStorage.setItem('authToken', data.token);
