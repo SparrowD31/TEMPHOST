@@ -76,7 +76,7 @@ export default {
     },
   },
   plugins: [
-    tailwindcssAnimate,
+    tailwindcssAnimate, // Corrected plugin import
     function({ addUtilities }) {
       addUtilities({
         '.pause': {
