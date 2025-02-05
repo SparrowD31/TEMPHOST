@@ -7,7 +7,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setUser } from '../../store/auth';
 import { Link } from 'react-router-dom';
 import Loader from '../../components/loader/Loader';
-import { userApi, orderApi } from '../../utils/apiConfig';
+
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState('profile');
