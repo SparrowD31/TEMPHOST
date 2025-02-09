@@ -9,7 +9,7 @@ const app = express();
 
 // CORS configuration - This must be before any routes
 app.use(cors({
-  origin: ['https://temphost-frontend.onrender.com', 'http://localhost:5173'],
+  origin: [process.env.VITE_BASE_URL, 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -30,7 +30,7 @@ app.use(cookieParser());
 // Request logging middleware
 app.use((req, res, next) => {
   // Add CORS headers to every response
-  res.header('Access-Control-Allow-Origin', 'https://temphost-frontend.onrender.com');
+  res.header('Access-Control-Allow-Origin', process.env.VITE_BASE_URL);
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Credentials', 'true');

@@ -15,7 +15,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://temphost-backend.onrender.com', // Replace with your backend URL
+        target: process.env.VITE_API_URL, // Use vite_api_url from .env
         changeOrigin: true,
         secure: false,
       },
