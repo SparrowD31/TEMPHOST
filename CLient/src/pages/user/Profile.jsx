@@ -135,46 +135,28 @@ export default function Profile() {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!user) return;
-      
-      const userId = user?._id || user?.id;
-      if (!userId) return;
+      if (!user?.id) return;
 
       try {
         setIsLoading(true);
-        setError(null);
-        
-        const response = await fetch(`/api/users/${userId}`, {
-          headers: {
-            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const [userResponse, ordersResponse] = await Promise.all([
+          makeRequest(`/users/${user.id}`),
+          makeRequest(`/users/${user.id}/orders`)
+        ]);
 
-        console.log(data,'hj');
-        
-        setUserData(data);
-        dispatch(setUser(data));
-        
-        if (data.address) {
-          const addressList = Array.isArray(data.address) ? data.address : [data.address];
-          const validAddresses = addressList.filter(addr => 
-            addr && 
-            typeof addr === 'object' &&
-            Object.keys(addr).length > 0
-          );
-          setAddresses(validAddresses);
-        } else {
-          setAddresses([]);
+        if (userResponse) {
+          setUserData(userResponse);
+        }
+        if (ordersResponse) {
+          setOrders(ordersResponse);
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        setError(error.message);
+        console.error("Error fetching data:", error);
+        if (error.message.includes('404')) {
+          setError("User data not found. Please try logging in again.");
+        } else {
+          setError("Failed to load profile data. Please try again later.");
+        }
       } finally {
         setIsLoading(false);
       }
