@@ -4,20 +4,28 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const mongoose = require('mongoose');
 
+// Debug middleware for this router
+router.use((req, res, next) => {
+    console.log(`User route accessed: ${req.method} ${req.path}`);
+    next();
+});
+
 // Get user by ID
 router.get('/:id', async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select('-password'); // Exclude password
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    try {
+        console.log(`Fetching user with ID: ${req.params.id}`);
+        const user = await User.findById(req.params.id).select('-password');
+        
+        if (!user) {
+            console.log(`User not found with ID: ${req.params.id}`);
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.json(user);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
-
-    res.json(user);
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
 });
 
 // Update user
@@ -43,15 +51,15 @@ router.put('/:id', async (req, res) => {
 });
 
 // Get user orders
-router.get('/orders', async (req, res) => {
-  try {
-    const { userId } = req.query;
-    const orders = await Order.find({ userId }).sort({ date: -1 });
-    res.json(orders);
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
+router.get('/:userId/orders', async (req, res) => {
+    try {
+        console.log(`Fetching orders for user ID: ${req.params.userId}`);
+        const orders = await Order.find({ userId: req.params.userId }).sort({ date: -1 });
+        res.json(orders);
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
 });
 
 // Update user address and mobile
