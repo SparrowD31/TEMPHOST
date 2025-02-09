@@ -8,7 +8,6 @@ import { setUser } from '../../store/auth';
 import { Link } from 'react-router-dom';
 import Loader from '../../components/loader/Loader';
 
-
 export default function Profile() {
   const [activeTab, setActiveTab] = useState('profile');
   const [userData, setUserData] = useState(null);
@@ -136,26 +135,85 @@ export default function Profile() {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!user?.id) return;
+      if (!user) return;
       
+      const userId = user?._id || user?.id;
+      if (!userId) return;
+
       try {
         setIsLoading(true);
-        const [userResponse, ordersResponse] = await Promise.all([
-          userApi.getUser(user.id),
-          orderApi.getOrders(user.id)
-        ]);
+        setError(null);
+        
+        const response = await fetch(`/api/users/${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
 
-        setUserData(userResponse);
-        setOrders(ordersResponse);
-      } catch (err) {
-        console.error('Error fetching profile data:', err);
-        setError(err.message);
+        console.log(data,'hj');
+        
+        setUserData(data);
+        dispatch(setUser(data));
+        
+        if (data.address) {
+          const addressList = Array.isArray(data.address) ? data.address : [data.address];
+          const validAddresses = addressList.filter(addr => 
+            addr && 
+            typeof addr === 'object' &&
+            Object.keys(addr).length > 0
+          );
+          setAddresses(validAddresses);
+        } else {
+          setAddresses([]);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setError(error.message);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchUserData();
+  }, [user, dispatch]);
+
+  useEffect(() => {
+    const fetchUserOrders = async () => {
+      if (!user) return;
+
+      const userId = user?._id || user?.id;
+      if (!userId) return;
+
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/orders?userId=${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`
+          }
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch orders');
+        }
+        
+        const data = await response.json();
+        setOrders(data);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserOrders();
   }, [user]);
 
   if (loading) {
