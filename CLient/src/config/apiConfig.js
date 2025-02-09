@@ -11,15 +11,28 @@ if (BASE_URL.includes('temphost-client.onrender.com')) {
 
 console.log('API Base URL configured as:', BASE_URL);
 
+// Helper function to ensure endpoint starts with '/'
+const formatEndpoint = (endpoint) => {
+    return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+};
+
 export const makeRequest = async (endpoint, options = {}) => {
-    const url = `${BASE_URL}${endpoint}`;
+    const formattedEndpoint = formatEndpoint(endpoint);
+    const url = `${BASE_URL}${formattedEndpoint}`;
     
     // Log every request for debugging
     console.log('Making API Request:', {
         url,
         method: options.method || 'GET',
-        endpoint
+        endpoint: formattedEndpoint
     });
+
+    // Validate URL format
+    try {
+        new URL(url);
+    } catch (e) {
+        throw new Error(`Invalid URL formed: ${url}`);
+    }
 
     try {
         const response = await fetch(url, {
@@ -41,7 +54,9 @@ export const makeRequest = async (endpoint, options = {}) => {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status} for URL: ${url}`);
+            const errorMessage = `HTTP error! status: ${response.status} for URL: ${url}`;
+            console.error('Request failed:', errorMessage);
+            throw new Error(errorMessage);
         }
 
         const text = await response.text();
@@ -60,9 +75,7 @@ export const makeRequest = async (endpoint, options = {}) => {
         console.error('API Request Failed:', {
             url,
             error: error.message,
-            endpoint,
-            errorType: error.name,
-            errorStack: error.stack
+            endpoint: formattedEndpoint
         });
 
         if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
