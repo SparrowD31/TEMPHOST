@@ -2,40 +2,49 @@ const BASE_URL = import.meta.env.VITE_API_URL; // Using environment variable ins
 
 export const makeRequest = async (endpoint, options = {}) => {
     const url = `${BASE_URL}${endpoint}`;
-    console.log('Making request to:', url); // Add this for debugging
+    console.log('Making request to:', url, 'with options:', {
+        method: options.method,
+        headers: options.headers,
+        credentials: options.credentials
+    });
     
     try {
         const response = await fetch(url, {
             ...options,
-            credentials: 'include',
+            credentials: 'include', // Ensures cookies are sent with requests
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 ...options.headers,
             },
         });
 
-        // Log the response status and URL for debugging
-        console.log(`Response status: ${response.status} for ${url}`);
+        console.log(`Response received:`, {
+            status: response.status,
+            statusText: response.statusText,
+            url: response.url
+        });
 
         if (!response.ok) {
-            // Try to get error message from response if possible
             let errorMessage;
             try {
                 const errorData = await response.json();
                 errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
             } catch {
-                errorMessage = `HTTP error! status: ${response.status}`;
+                errorMessage = `HTTP error! status: ${response.status} - ${response.statusText}`;
             }
+            console.error('Request failed:', errorMessage);
             throw new Error(errorMessage);
         }
 
-        // Check if response is empty
         const text = await response.text();
+        console.log('Response text:', text.substring(0, 200)); // Log first 200 chars of response
+
         if (!text) {
+            console.log('Empty response received');
             return null;
         }
 
-        // Try to parse JSON
         try {
             return JSON.parse(text);
         } catch (e) {
