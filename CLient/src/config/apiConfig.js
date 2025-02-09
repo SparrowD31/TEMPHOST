@@ -15,7 +15,7 @@ export const makeRequest = async (endpoint, options = {}) => {
     const url = `${BASE_URL}${endpoint}`;
     
     // Log every request for debugging
-    console.log('API Request:', {
+    console.log('Making API Request:', {
         url,
         method: options.method || 'GET',
         endpoint
@@ -28,8 +28,16 @@ export const makeRequest = async (endpoint, options = {}) => {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                'Origin': window.location.origin,
                 ...options.headers,
             },
+            mode: 'cors',
+        });
+
+        console.log('Response received:', {
+            status: response.status,
+            ok: response.ok,
+            url: response.url
         });
 
         if (!response.ok) {
@@ -49,11 +57,18 @@ export const makeRequest = async (endpoint, options = {}) => {
             throw new Error(`Invalid JSON response from server for URL: ${url}`);
         }
     } catch (error) {
-        console.error(`API Request Failed:`, {
+        console.error('API Request Failed:', {
             url,
             error: error.message,
-            endpoint
+            endpoint,
+            errorType: error.name,
+            errorStack: error.stack
         });
+
+        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+            throw new Error(`Unable to reach the server at ${url}. Please check if the server is running and CORS is properly configured.`);
+        }
+
         throw error;
     }
 };
