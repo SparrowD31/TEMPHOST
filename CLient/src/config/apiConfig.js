@@ -14,12 +14,34 @@ export const makeRequest = async (endpoint, options = {}) => {
             },
         });
 
+        // Log the response status and URL for debugging
+        console.log(`Response status: ${response.status} for ${url}`);
+
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            // Try to get error message from response if possible
+            let errorMessage;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
+            } catch {
+                errorMessage = `HTTP error! status: ${response.status}`;
+            }
+            throw new Error(errorMessage);
         }
 
-        const data = await response.json();
-        return data;
+        // Check if response is empty
+        const text = await response.text();
+        if (!text) {
+            return null;
+        }
+
+        // Try to parse JSON
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('Failed to parse JSON response:', text);
+            throw new Error('Invalid JSON response from server');
+        }
     } catch (error) {
         console.error(`API Request Error for ${url}:`, error);
         throw error;
