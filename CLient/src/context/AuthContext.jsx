@@ -75,46 +75,42 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      console.log('Starting login process...');
-      const response = await fetch('/api/auth/login', {
+      // Log the environment and URL being used
+      console.log('Environment:', import.meta.env.MODE);
+      const apiUrl = import.meta.env.VITE_API_URL;
+      console.log('API URL:', apiUrl);
+      
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({ email, password }),
+        // Remove credentials if using different domains in production
+        // credentials: 'include', 
+        body: JSON.stringify({ email, password })
       });
 
-      const data = await response.json();
-      console.log('Login response:', data);
+      // Log the response details
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries([...response.headers]));
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+      const text = await response.text();
+      console.log('Raw response:', text);
+
+      if (!text) {
+        throw new Error('Empty response from server');
       }
 
-      // Store sensitive data in sessionStorage
-      if (data.token) {
+      const data = JSON.parse(text);
+      
+      if (data.success) {
         sessionStorage.setItem('authToken', data.token);
-      }
-      if (data.razorPayId) {
-        sessionStorage.setItem('razorPayId', data.razorPayId);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        setUser(data.user);
       }
 
-      // Store non-sensitive user data in localStorage
-      const normalizedUser = {
-        id: data.user._id || data.user.id,
-        email: data.user.email,
-        name: data.user.name,
-        role: data.user.role || 'user',
-        mobile: data.user.mobile,
-        // Add other non-sensitive fields as needed
-      };
-      
-      localStorage.setItem('userData', JSON.stringify(normalizedUser));
-      setUser(normalizedUser);
-      setIsAuthenticated(true);
-      setIsAdmin(normalizedUser.role === 'admin');
-      
-      return { token: data.token, user: normalizedUser };
+      return data;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
